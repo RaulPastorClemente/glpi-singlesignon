@@ -277,6 +277,26 @@ function plugin_singlesignon_install() {
       }
    }
 
+   // Create the mapping table
+   if (!sso_TableExists("glpi_plugin_singlesignon_providers_mappings")) {
+      $query = "CREATE TABLE `glpi_plugin_singlesignon_providers_mappings` (
+                  `id`                         int(11) NOT NULL auto_increment,
+                  `plugin_singlesignon_providers_id` int(11) NOT NULL DEFAULT '0',
+                  `name`                       varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `given_name`                 varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `family_name`                varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `picture`                    varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `email`                      varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `locale`                     varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `phone_number`               varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `group`                      varchar(255) COLLATE utf8_unicode_ci DEFAULT '',
+                  `date_mod`                   timestamp NULL DEFAULT NULL,
+                  PRIMARY KEY (`id`)
+               ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
+
+      $DB->query($query) or die("error creating glpi_plugin_singlesignon_providers_mappings " . $DB->error());
+   }
+
    // add display preferences
    $query_display_pref = "SELECT id
       FROM glpi_displaypreferences
@@ -334,6 +354,12 @@ function plugin_singlesignon_uninstall() {
    if (sso_TableExists("glpi_plugin_singlesignon_providers")) {
       $query = "DROP TABLE `glpi_plugin_singlesignon_providers`";
       $DB->query($query) or die("error deleting glpi_plugin_singlesignon_providers");
+   }
+
+   // Drop the mapping table
+   if (sso_TableExists("glpi_plugin_singlesignon_providers_mappings")) {
+      $query = "DROP TABLE `glpi_plugin_singlesignon_providers_mappings`";
+      $DB->query($query) or die("error deleting glpi_plugin_singlesignon_providers_mappings");
    }
 
    return true;
