@@ -48,6 +48,10 @@ function plugin_init_singlesignon() {
       'addtabon' => ['Preference', 'User']
    ]);
 
+   Plugin::registerClass('PluginSinglesignonProvider_Mapping', [
+      'addtabon' => ['PluginSinglesignonProvider']
+   ]);
+
    $PLUGIN_HOOKS['csrf_compliant']['singlesignon'] = true;
 
    $PLUGIN_HOOKS['config_page']['singlesignon'] = 'front/provider.php';
