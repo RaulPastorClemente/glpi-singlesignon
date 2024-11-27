@@ -63,6 +63,12 @@ function plugin_init_singlesignon() {
    $PLUGIN_HOOKS['menu_toadd']['singlesignon'] = [
       'config'  => 'PluginSinglesignonProvider',
    ];
+
+   // redirect to single logout
+	if (strpos($_SERVER['REQUEST_URI'], 'front/logout.php') || strpos($_SERVER['REQUEST_URI'], 'front\logout.php')){
+		plugin_dispay_logout_singlesignon();
+	}
+
 }
 
 // Get the name and the version of the plugin - Needed
@@ -94,6 +100,13 @@ function plugin_singlesignon_check_prerequisites() {
 
 function plugin_singlesignon_check_config() {
    return true;
+}
+
+function plugin_dispay_logout_singlesignon(){
+   if (isset($_SESSION["glpi_is_sso"]) && $_SESSION["glpi_is_sso"] == 1) {
+      $provider = new PluginSinglesignonProvider();
+      $provider->singleLogout();
+   }
 }
 
 function __sso($str) {

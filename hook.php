@@ -230,6 +230,8 @@ function plugin_singlesignon_install() {
                   `url_authorize`              varchar(255) COLLATE utf8_unicode_ci NULL,
                   `url_access_token`           varchar(255) COLLATE utf8_unicode_ci NULL,
                   `url_resource_owner_details` varchar(255) COLLATE utf8_unicode_ci NULL,
+                  `url_logout`                 varchar(255) COLLATE utf8_unicode_ci NULL,
+                  `use_single_logout`             tinyint(1) NOT NULL DEFAULT '0',
                   `is_active`                  tinyint(1) NOT NULL DEFAULT '0',
                   `use_email_for_login`        tinyint(1) NOT NULL DEFAULT '0',
                   `split_name`                 tinyint(1) NOT NULL DEFAULT '0',
@@ -274,6 +276,16 @@ function plugin_singlesignon_install() {
       $result = $DB->query($query) or die($DB->error());
       if ($DB->numrows($result) != 1) {
          $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD split_name tinyint(1) NOT NULL DEFAULT '0'") or die($DB->error());
+      }
+      $query = "SHOW COLUMNS FROM glpi_plugin_singlesignon_providers LIKE 'url_logout'";
+      $result = $DB->query($query) or die($DB->error());
+      if ($DB->numrows($result) != 1) {
+         $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD url_logout varchar(255) COLLATE utf8_unicode_ci NULL") or die($DB->error());
+      }
+      $query = "SHOW COLUMNS FROM glpi_plugin_singlesignon_providers LIKE 'use_single_logout'";
+      $result = $DB->query($query) or die($DB->error());
+      if ($DB->numrows($result) != 1) {
+         $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD use_single_logout tinyint(1) NOT NULL DEFAULT '0'") or die($DB->error());
       }
    }
 

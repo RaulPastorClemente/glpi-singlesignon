@@ -77,6 +77,8 @@ if ($user_id || $signon_provider->login()) {
 
    if ($user_id) {
       $signon_provider->linkUser($user_id);
+      // successful login
+      $_SESSION['glpi_is_sso'] = 1;
    }
 
    $params = PluginSinglesignonToolbox::getCallbackParameters('q');

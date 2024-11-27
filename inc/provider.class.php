@@ -166,6 +166,11 @@ class PluginSinglesignonProvider extends CommonDBTM {
       echo "</tr>\n";
 
       echo "<tr class='tab_bg_1'>";
+      echo "<td>" . __sso('Logout URL') . "</td>";
+      echo "<td colspan='3'><input type='text' style='width:96%' name='url_logout' value='" . $this->fields["url_logout"] . "'></td>";
+      echo "</tr>\n";
+
+      echo "<tr class='tab_bg_1'>";
       echo "<td>" . __('IsDefault', 'singlesignon') . "</td><td>";
       Dropdown::showYesNo("is_default", $this->fields["is_default"]);
       echo "<td>" . __sso('PopupAuth') . "</td>";
@@ -192,6 +197,12 @@ class PluginSinglesignonProvider extends CommonDBTM {
       echo "<td>" . __sso('Split Name') . "<td>";
       Dropdown::showYesNo("split_name", $this->fields["split_name"]);
       echo "</td>";
+
+      echo "<tr class='tab_bg_1'>";
+      echo "<td>" . __sso('Use Single Logout') . "</td>";
+      echo "<td>";
+      Dropdown::showYesNo("use_single_logout", $this->fields["use_single_logout"]);
+      echo "</td></tr>\n";
 
       echo "<tr class='tab_bg_1'>";
       echo "<th colspan='4'>" . __('Personalization') . "</th>";
@@ -418,6 +429,15 @@ class PluginSinglesignonProvider extends CommonDBTM {
          }
       }
 
+      // single logout
+      if (isset($input['url_logout'])) {
+         $input['url_logout'] = trim($input['url_logout']);
+      }
+
+      if (isset($input['use_single_logout'])) {
+         $input['use_sso_logout'] = (int)$input['use_single_logout'];
+      }
+
       return $input;
    }
 
@@ -546,6 +566,22 @@ class PluginSinglesignonProvider extends CommonDBTM {
          'field' => 'split_name',
          'name' => __('Split name field for First & Last Name'),
          'searchtype' => 'equals',
+         'datatype' => 'bool',
+      ];
+
+      $tab[] = [
+         'id' => 13,
+         'table' => $this->getTable(),
+         'field' => 'url_logout',
+         'name' => __sso('Logout URL'),
+         'datatype' => 'text',
+      ];
+
+      $tab[] = [
+         'id' => 14,
+         'table' => $this->getTable(),
+         'field' => 'use_single_logout',
+         'name' => __sso('Use Single Logout'),
          'datatype' => 'bool',
       ];
 
@@ -1531,5 +1567,34 @@ class PluginSinglesignonProvider extends CommonDBTM {
       }
   }
 
+   /**
+    * Single Logout implementation
+    */
+   public function singleLogout() {
+      global $DB;
+      // need to identify the provider linked to the user
+      $user = Session::getLoginUserID();
+      $provider = new PluginSinglesignonProvider();
+      $query = "SELECT * FROM glpi_plugin_singlesignon_providers_users WHERE users_id = " . intval($user);
+      $result = $DB->query($query);
+      $provider_id = $DB->fetchAssoc($result)['plugin_singlesignon_providers_id'];
+      $provider->getFromDB($provider_id);
+      $sign_out_endpoint = $provider->fields['url_logout'];
+
+      // if no sign-out URL is provided for the provider, log a debug message
+      if (empty($sign_out_endpoint)) {
+         Toolbox::logDebug("No sign-out URL provided for provider {$provider->fields['name']}");
+      }
+
+      if ($provider->fields['use_single_logout'] == 1) {
+         // destroying session and cookies
+         Session::destroy();
+         Auth::setRememberMeCookie('');
+
+         // redirect to provider's sign out
+         header("Location: $sign_out_endpoint");
+         exit();
+      }
+   }
 
 }
