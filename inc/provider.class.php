@@ -688,25 +688,6 @@ class PluginSinglesignonProvider extends CommonDBTM {
       return Dropdown::showFromArray($name, $items, $params);
    }
 
-   /**
-    * Get an history entry message
-    *
-    * @param $data Array from glpi_logs table
-    *
-    * @since GLPI version 0.84
-    *
-    * @return string
-    * */
-   static function getHistoryEntry($data) {
-
-      switch ($data['linked_action'] - Log::HISTORY_PLUGIN) {
-         case 0:
-            return __('History from plugin example', 'example');
-      }
-
-      return '';
-   }
-
    //////////////////////////////
    ////// SPECIFIC MODIF MASSIVE FUNCTIONS ///////
 
@@ -720,78 +701,8 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $actions = parent::getSpecificMassiveActions($checkitem);
 
       $actions['Document_Item' . MassiveAction::CLASS_ACTION_SEPARATOR . 'add'] = _x('button', 'Add a document');         // GLPI core one
-      $actions[__CLASS__ . MassiveAction::CLASS_ACTION_SEPARATOR . 'do_nothing'] = __('Do Nothing - just for fun', 'example');  // Specific one
 
       return $actions;
-   }
-
-   /**
-    * @since version 0.85
-    *
-    * @see CommonDBTM::showMassiveActionsSubForm()
-    * */
-   static function showMassiveActionsSubForm(MassiveAction $ma) {
-
-      switch ($ma->getAction()) {
-         case 'DoIt':
-            echo "&nbsp;<input type='hidden' name='toto' value='1'>" . Html::submit(_x('button', 'Post'), ['name' => 'massiveaction']) . " " . __('Write in item history', 'example');
-            return true;
-         case 'do_nothing':
-            echo "&nbsp;" . Html::submit(_x('button', 'Post'), ['name' => 'massiveaction']) . " " . __('but do nothing :)', 'example');
-            return true;
-      }
-      return parent::showMassiveActionsSubForm($ma);
-   }
-
-   /**
-    * @since version 0.85
-    *
-    * @see CommonDBTM::processMassiveActionsForOneItemtype()
-    * */
-   static function processMassiveActionsForOneItemtype(MassiveAction $ma, CommonDBTM $item, array $ids) {
-      global $DB;
-
-      switch ($ma->getAction()) {
-         case 'DoIt':
-            if ($item->getType() == 'Computer') {
-               Session::addMessageAfterRedirect(__("Right it is the type I want...", 'example'));
-               Session::addMessageAfterRedirect(__('Write in item history', 'example'));
-               $changes = [0, 'old value', 'new value'];
-               foreach ($ids as $id) {
-                  if ($item->getFromDB($id)) {
-                     Session::addMessageAfterRedirect("- " . $item->getField("name"));
-                     Log::history($id, 'Computer', $changes, 'PluginExampleExample', Log::HISTORY_PLUGIN);
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
-                  } else {
-                     // Example of ko count
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
-                  }
-               }
-            } else {
-               // When nothing is possible ...
-               $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
-            }
-            return;
-
-         case 'do_nothing':
-            if ($item->getType() == 'PluginExampleExample') {
-               Session::addMessageAfterRedirect(__("Right it is the type I want...", 'example'));
-               Session::addMessageAfterRedirect(__("But... I say I will do nothing for:", 'example'));
-               foreach ($ids as $id) {
-                  if ($item->getFromDB($id)) {
-                     Session::addMessageAfterRedirect("- " . $item->getField("name"));
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
-                  } else {
-                     // Example for noright / Maybe do it with can function is better
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
-                  }
-               }
-            } else {
-               $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
-            }
-            return;
-      }
-      parent::processMassiveActionsForOneItemtype($ma, $item, $ids);
    }
 
    static function getIcon() {
