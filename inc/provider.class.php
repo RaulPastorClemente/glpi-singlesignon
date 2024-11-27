@@ -88,9 +88,10 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $ong = [];
       $this->addDefaultFormTab($ong);
       $this->addStandardTab(__CLASS__, $ong, $options);
-      $this->addStandardTab('Log', $ong, $options);
       // Add a custom tab for fields mapping
       $this->addStandardTab('PluginSinglesignonProvider_Mapping', $ong, $options);
+      $this->addStandardTab('Log', $ong, $options);
+
       return $ong;
   }
 
