@@ -76,6 +76,7 @@ function plugin_version_singlesignon() {
    return [
       'name'           => __sso('Single Sign-on'),
       'version'        => PLUGIN_SINGLESIGNON_VERSION,
+      'license'        => 'GPLv3+',
       'author'         => 'Edgard Lorraine Messias',
       'homepage'       => 'https://github.com/edgardmessias/glpi-singlesignon',
       'minGlpiVersion' => '0.85'
