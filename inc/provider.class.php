@@ -56,6 +56,9 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
    public $debug = false;
 
+   private $mappings = [];
+   private $user_data = [];
+
    public static function canCreate() {
       return static::canUpdate();
    }
@@ -1066,7 +1069,9 @@ class PluginSinglesignonProvider extends CommonDBTM {
          return false;
       }
       // get mappings
-      $mappings = $this->getMappings();
+      $this->mappings = $this->getMappings();
+      $mappings = $this->mappings;
+      $this->user_data = $resource_array;
 
       $user = new User();
 
@@ -1361,12 +1366,12 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
    public function login() {
       $user = $this->findUser();
-
       if (!$user) {
          return false;
       }
 
-      //Create fake auth
+      $this->updateUserData($user->getID());
+
       $auth = new Auth();
       $auth->user = $user;
       $auth->auth_succeded = true;
@@ -1380,6 +1385,9 @@ class PluginSinglesignonProvider extends CommonDBTM {
       return $auth->auth_succeded;
    }
 
+   /**
+    * Link a user to the provider
+    */
    public function linkUser($user_id) {
       $user = new User();
 
@@ -1451,38 +1459,50 @@ class PluginSinglesignonProvider extends CommonDBTM {
      * @param int $user_id
      */
     private function processGroups($group, $user_id) {
-      global $DB;
+        global $DB;
 
-      // ensure $group is a string
-      if (is_array($group)) {
-          $group = implode(',', $group);
-      }
+        if (is_array($group)) {
+            $group = implode(',', $group);
+        }
 
-      $group_names = explode(',', $group);
-      foreach ($group_names as $group_name) {
-          $group_name = trim($group_name);
-          $id_group_create = 0;
+        $group_names = explode(',', $group);
 
-          // check if the group exists
-          $request = $DB->request('glpi_groups', ['name' => $group_name]);
-          if ($data = $request->next()) {
-              $id_group_create = $data['id'];
-          } else {
-            // create the group if it doesn't exist
-            $query = "INSERT IGNORE INTO `glpi_groups` (`id`, `name`, `completename`) VALUES ($id_group_create, '$group_name', '$group_name');";
+        // check if user is already associated with the group
+        $query = "SELECT `glpi_groups_users`.`groups_id`, `completename` FROM `glpi_groups_users` LEFT JOIN `glpi_groups` ON `glpi_groups_users`.`groups_id` = `glpi_groups`.`id` WHERE `users_id` = '$user_id'";
+        $result = $DB->query($query);
+        $existing_groups = [];
+        if ($result) {
+            while ($data = $DB->fetchAssoc($result)) {
+                $existing_groups[] = $data['completename'];
+            }
+        }
+
+        // add the user to the group if they are not already in it
+        foreach ($group_names as $group_name) {
+            $group_name = trim($group_name);
+            if (in_array($group_name, $existing_groups)) {
+               // skip if the user is already in the group
+                continue;
+            }
+
+            // check if the group exists
+            $request = $DB->request('glpi_groups', ['completename' => $group_name]);
+            if ($data = $request->next()) {
+                $id_group_create = $data['id'];
+            } else {
+                // create the group if it doesn't exist
+                $query = "INSERT IGNORE INTO `glpi_groups` (`name`, `completename`) VALUES ('$group_name', '$group_name')";
+                $DB->queryOrDie($query);
+                $query = "SELECT `id` FROM `glpi_groups` WHERE `completename` = '$group_name'";
+                $result = $DB->query($query);
+                $id_group_create = $DB->fetchAssoc($result)['id'];
+            }
+
+            // link the user to the group
+            $query = "INSERT IGNORE INTO `glpi_groups_users` (`users_id`, `groups_id`) VALUES ('$user_id', '$id_group_create')";
             $DB->queryOrDie($query);
-            $query = "SELECT `id` FROM `glpi_groups` WHERE `name` = '$group_name'";
-            $result = $DB->query($query);
-            $data = $DB->fetchAssoc($result);
-            $id_group_create = $data['id'];
-
-          }
-
-          // link the user to the group
-          $query = "INSERT IGNORE INTO `glpi_groups_users` (`users_id`, `groups_id`) VALUES ('$user_id', '$id_group_create')";
-          $DB->queryOrDie($query);
-      }
-  }
+        }
+    }
 
    /**
     * Single Logout implementation
@@ -1511,6 +1531,72 @@ class PluginSinglesignonProvider extends CommonDBTM {
          // redirect to provider's sign out
          header("Location: $sign_out_endpoint");
          exit();
+      }
+   }
+
+   /**
+    * Update user data from provider, will be called after login
+    */
+   function updateUserData($user_id) {
+      global $DB;
+      $user = new User();
+      $user->getFromDB($user_id);
+
+      $resource_array = $this->user_data;
+      $mappings = $this->mappings;
+
+      // name
+      if (isset($mappings['name']) && isset($resource_array[$mappings['name']]) && !empty($resource_array[$mappings['name']])) {
+         $user->fields['name'] = $resource_array[$mappings['name']];
+      }
+
+      // email
+      if (isset($mappings['email']) && isset($resource_array[$mappings['email']]) && !empty($resource_array[$mappings['email']])) {
+         $user->fields['_useremails'][-1] = $resource_array[$mappings['email']];
+         $querry = "INSERT IGNORE INTO `glpi_useremails` (`id`, `users_id`, `is_default`, `is_dynamic`, `email`) VALUES ('0', '$user_id', '1', '0', '{$resource_array[$mappings['email']]}')";
+         $DB->queryOrDie($querry);
+      }  
+
+      // if split name is enabled
+      $splitname = $this->fields['split_name'];
+      // splitting either the name or displayName field
+      $firstLastArray = ($splitname && isset($resource_array['name'])) 
+      ? preg_split('/ /', $resource_array['name'], 2) 
+      : (isset($resource_array['displayName']) 
+          ? preg_split('/ /', $resource_array['displayName'], 2) 
+          : ['', '']);  
+
+      // if mappings are set for first and last name, we overwrite the splitname with the mappings
+      if(isset($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) && isset($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
+         $firstLastArray = [$resource_array[$mappings['given_name']], $resource_array[$mappings['family_name']]];
+      }
+      // realname (split name)
+      $user->fields['realname'] = $firstLastArray[1];
+      // firstname (split name)
+      $user->fields['firstname'] = $firstLastArray[0];
+      // picture
+      if (isset($mappings['picture']) && isset($resource_array[$mappings['picture']])) {
+         $user->fields['picture'] = $resource_array[$mappings['picture']];
+      }
+
+      // language
+      if (isset($mappings['locale']) && isset($resource_array[$mappings['locale']])) {
+         $user->fields['language'] = $resource_array[$mappings['locale']];
+      }
+
+      // phone
+      if (isset($mappings['phone_number']) && isset($resource_array[$mappings['phone_number']])) {
+         $user->fields['phone'] = $resource_array[$mappings['phone_number']];
+      }
+      
+      // group
+      if (isset($mappings['group']) && isset($resource_array[$mappings['group']])) {
+         $this->processGroups($resource_array[$mappings['group']], $user_id);
+      }
+      $isOk = $user->update($user->fields);
+
+      if (!$isOk) {
+         Toolbox::logDebug("Failed to update user data with provider data for user {$user->fields['name']}");
       }
    }
 
