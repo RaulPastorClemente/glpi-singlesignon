@@ -174,7 +174,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       echo "</tr>\n";
 
       echo "<tr class='tab_bg_1'>";
-      echo "<td>" . __('IsDefault', 'singlesignon') . "</td><td>";
+      echo "<td>" . __sso('Is Default', 'singlesignon') . "</td><td>";
       Dropdown::showYesNo("is_default", $this->fields["is_default"]);
       echo "<td>" . __sso('PopupAuth') . "</td>";
       echo "<td>";

@@ -82,12 +82,12 @@ class PluginSinglesignonProvider_Mapping extends CommonDBTM {
         echo "</tr>";
 
         echo "<tr class='tab_bg_1'>";
-        echo "<td>" . __('Given Name') . "</td>";
+        echo "<td>" . __sso('Given Name') . "</td>";
         echo "<td><input type='text' name='given_name' value='" . Html::cleanInputText($mapping['given_name'] ?? '') . "'></td>";
         echo "</tr>";
 
         echo "<tr class='tab_bg_1'>";
-        echo "<td>" . __('Family Name') . "</td>";
+        echo "<td>" . __sso('Family Name') . "</td>";
         echo "<td><input type='text' name='family_name' value='" . Html::cleanInputText($mapping['family_name'] ?? '') . "'></td>";
         echo "</tr>";
 
@@ -107,7 +107,7 @@ class PluginSinglesignonProvider_Mapping extends CommonDBTM {
         echo "</tr>";
 
         echo "<tr class='tab_bg_1'>";
-        echo "<td>" . __('Phone Number') . "</td>";
+        echo "<td>" . __sso('Phone Number') . "</td>";
         echo "<td><input type='text' name='phone_number' value='" . Html::cleanInputText($mapping['phone_number'] ?? '') . "'></td>";
         echo "</tr>";
 
