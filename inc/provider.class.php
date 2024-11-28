@@ -217,7 +217,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       Html::showColorField(
          'bgcolor',
          [
-            'value'  => $this->fields['bgcolor'],
+            'value'  => $this->fields['bgcolor'] ?? '',
          ]
       );
       echo "&nbsp;";
@@ -233,7 +233,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       Html::showColorField(
          'color',
          [
-            'value'  => $this->fields['color'],
+            'value'  => $this->fields['color'] ?? '',
          ]
       );
       echo "&nbsp;";
