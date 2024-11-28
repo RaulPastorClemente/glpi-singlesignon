@@ -1413,13 +1413,19 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $link->deleteByCriteria([
          'plugin_singlesignon_providers_id' => $this->fields['id'],
          'remote_id' => $remote_id,
-      ]);
+      ],
+      false,
+      false
+   );
 
       return $link->add([
          'plugin_singlesignon_providers_id' => $this->fields['id'],
          'users_id' => $user_id,
          'remote_id' => $remote_id,
-      ]);
+      ],
+      false,
+      false
+   );
    }
 
    /**
