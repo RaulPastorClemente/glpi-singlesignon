@@ -1249,16 +1249,20 @@ class PluginSinglesignonProvider extends CommonDBTM {
             $tokenAPI = base_convert(hash('sha256', time() . mt_rand()), 16, 36);
             $tokenPersonnel = base_convert(hash('sha256', time() . mt_rand()), 16, 36);
 
+            // if split name is enabled
             $splitname = $this->fields['split_name'];
-            // splitting either the name or displayName field
-            $firstLastArray = ($splitname && isset($resource_array['name'])) 
-            ? preg_split('/ /', $resource_array['name'], 2) 
-            : (isset($resource_array['displayName']) 
-                ? preg_split('/ /', $resource_array['displayName'], 2) 
-                : ['', '']);        
+            $firstLastArray = ['', ''];
+            if ($splitname) {
+               if (isset($resource_array['name']) && !empty($resource_array['name'])) {
+                  $firstLastArray = preg_split('/ /', $resource_array['name'], 2);
+               } elseif (isset($resource_array['displayName']) && !empty($resource_array['displayName'])) {
+                  $firstLastArray = preg_split('/ /', $resource_array['displayName'], 2);
+               }
+            }
 
             // if mappings are set for first and last name, we overwrite the splitname with the mappings
-            if(isset($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) && isset($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
+            if(isset($mappings['family_name']) && !empty($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) 
+               && isset($mappings['given_name']) && !empty($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
                $firstLastArray = [$resource_array[$mappings['given_name']], $resource_array[$mappings['family_name']]];
             }
 
@@ -1546,12 +1550,12 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $mappings = $this->mappings;
 
       // name
-      if (isset($mappings['name']) && isset($resource_array[$mappings['name']]) && !empty($resource_array[$mappings['name']])) {
+      if (isset($mappings['name']) && !empty($mappings['name']) && isset($resource_array[$mappings['name']])) {
          $user->fields['name'] = $resource_array[$mappings['name']];
       }
 
       // email
-      if (isset($mappings['email']) && isset($resource_array[$mappings['email']]) && !empty($resource_array[$mappings['email']])) {
+      if (isset($mappings['email']) && !empty($mappings['email']) && isset($resource_array[$mappings['email']])) {
          $user->fields['_useremails'][-1] = $resource_array[$mappings['email']];
          $querry = "INSERT IGNORE INTO `glpi_useremails` (`id`, `users_id`, `is_default`, `is_dynamic`, `email`) VALUES ('0', '$user_id', '1', '0', '{$resource_array[$mappings['email']]}')";
          $DB->queryOrDie($querry);
@@ -1559,38 +1563,44 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
       // if split name is enabled
       $splitname = $this->fields['split_name'];
-      // splitting either the name or displayName field
-      $firstLastArray = ($splitname && isset($resource_array['name'])) 
-      ? preg_split('/ /', $resource_array['name'], 2) 
-      : (isset($resource_array['displayName']) 
-          ? preg_split('/ /', $resource_array['displayName'], 2) 
-          : ['', '']);  
+      $firstLastArray = ['', ''];
+      if ($splitname) {
+         if (isset($resource_array['name']) && !empty($resource_array['name'])) {
+            $firstLastArray = preg_split('/ /', $resource_array['name'], 2);
+         } elseif (isset($resource_array['displayName']) && !empty($resource_array['displayName'])) {
+            $firstLastArray = preg_split('/ /', $resource_array['displayName'], 2);
+         }
+      }
 
       // if mappings are set for first and last name, we overwrite the splitname with the mappings
-      if(isset($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) && isset($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
+      if(isset($mappings['family_name']) && !empty($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) 
+         && isset($mappings['given_name']) && !empty($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
          $firstLastArray = [$resource_array[$mappings['given_name']], $resource_array[$mappings['family_name']]];
       }
       // realname (split name)
-      $user->fields['realname'] = $firstLastArray[1];
+      if (!empty($firstLastArray[1])) {
+         $user->fields['realname'] = $firstLastArray[1];
+      }
       // firstname (split name)
-      $user->fields['firstname'] = $firstLastArray[0];
+      if (!empty($firstLastArray[0])) {
+         $user->fields['firstname'] = $firstLastArray[0];
+      }
       // picture
-      if (isset($mappings['picture']) && isset($resource_array[$mappings['picture']])) {
+      if (isset($mappings['picture']) && !empty($mappings['picture']) && isset($resource_array[$mappings['picture']])) {
          $user->fields['picture'] = $resource_array[$mappings['picture']];
       }
 
       // language
-      if (isset($mappings['locale']) && isset($resource_array[$mappings['locale']])) {
+      if (isset($mappings['locale']) && !empty($mappings['locale']) && isset($resource_array[$mappings['locale']])) {
          $user->fields['language'] = $resource_array[$mappings['locale']];
       }
 
       // phone
-      if (isset($mappings['phone_number']) && isset($resource_array[$mappings['phone_number']])) {
+      if (isset($mappings['phone_number']) && !empty($mappings['phone_number']) && isset($resource_array[$mappings['phone_number']])) {
          $user->fields['phone'] = $resource_array[$mappings['phone_number']];
       }
-      
       // group
-      if (isset($mappings['group']) && isset($resource_array[$mappings['group']])) {
+      if (isset($mappings['group']) && !empty($mappings['group']) && isset($resource_array[$mappings['group']])) {
          $this->processGroups($resource_array[$mappings['group']], $user_id);
       }
       $isOk = $user->update($user->fields);
