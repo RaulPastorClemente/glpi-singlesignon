@@ -1550,16 +1550,29 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $provider = new PluginSinglesignonProvider();
       $query = "SELECT * FROM glpi_plugin_singlesignon_providers_users WHERE users_id = " . intval($user);
       $result = $DB->query($query);
-      $provider_id = $DB->fetchAssoc($result)['plugin_singlesignon_providers_id'];
-      $provider->getFromDB($provider_id);
+      $data = $DB->fetchAssoc($result);
+
+      // check if we found a provider link
+      if (!$data) {
+         Toolbox::logDebug("No provider entry found for user {$user}");
+         return;
+      }
+
+      $provider_id = $data['plugin_singlesignon_providers_id'];
+
+      if (!$provider->getFromDB($provider_id)) {
+         Toolbox::logDebug("Failed to load provider {$provider_id}");
+         return;
+      }
+
       $sign_out_endpoint = $provider->fields['url_logout'];
 
-      // if no sign-out URL is provided for the provider, log a debug message
+      // if no sign-out URL is provided for the provider
       if (empty($sign_out_endpoint)) {
          Toolbox::logDebug("No sign-out URL provided for provider {$provider->fields['name']}");
       }
 
-      if ($provider->fields['use_single_logout'] == 1) {
+      if (isset($provider->fields['use_single_logout']) && $provider->fields['use_single_logout'] == 1) {
          // destroying session and cookies
          Session::destroy();
          Auth::setRememberMeCookie('');
