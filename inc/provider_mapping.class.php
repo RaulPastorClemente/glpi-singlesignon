@@ -77,7 +77,7 @@ class PluginSinglesignonProvider_Mapping extends CommonDBTM {
         echo "<form method='post' action=''>";
 
         echo "<tr class='tab_bg_1'>";
-        echo "<td>" . __('Name') . "</td>";
+        echo "<td>" . __('Login') . "</td>";
         echo "<td><input type='text' name='name' value='" . Html::cleanInputText($mapping['name'] ?? '') . "'></td>";
         echo "</tr>";
 
