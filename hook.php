@@ -376,4 +376,10 @@ function plugin_singlesignon_uninstall() {
    }
 
    return true;
+
+}
+
+function plugin_singlesignon_purgeUser($item) {
+   $provider = new PluginSinglesignonProvider();
+   $provider->deleteUser($item);
 }
