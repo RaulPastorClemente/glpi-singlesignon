@@ -1186,6 +1186,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
          }
       }
 
+      Toolbox::logDebug("Attempting to find user by name: $login");
       // look for the user in the database by name
       if ($login && $user->getFromDBbyName($login)) {
          return $user;
@@ -1197,13 +1198,30 @@ class PluginSinglesignonProvider extends CommonDBTM {
          $default_condition = [];
       }
 
-      // ultimately, look for the user in the database by email
-      $bOk = true;
-      if ($email && $user->getFromDBbyEmail($email, $default_condition)) {
-         return $user;
-      } else {
-         $bOk = false;
+      // handle duplicate emails
+      if ($email) {
+         $users_table = getTableForItemType('User');
+         $email_table = 'glpi_useremails';
+         
+         $query = "SELECT COUNT(DISTINCT u.id) as count 
+                   FROM $users_table u 
+                   JOIN $email_table e ON e.users_id = u.id 
+                   WHERE e.email = '$email'";
+                   
+         $result = $DB->query($query);
+         $count = $DB->result($result, 0, 'count');
+         
+         if ($count > 1) {
+            // log the issue
+            Toolbox::logDebug("SSO: Multiple users found with email: $email");
+            return false;
+         }
+         
+         if ($user->getFromDBbyEmail($email, $default_condition)) {
+            return $user;
+         }
       }
+      $bOk = false;
 
       // nb: mappings are implemented for generic providers only
 
@@ -1361,6 +1379,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
             return $user;
          } catch (\Exception $ex) {
+            Toolbox::logDebug("Exception during user creation: " . $ex->getMessage());
             return false;
          }
       }
