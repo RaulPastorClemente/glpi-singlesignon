@@ -1189,9 +1189,10 @@ class PluginSinglesignonProvider extends CommonDBTM {
          }
       }
 
-      Toolbox::logDebug("Attempting to find user by name: $login");
       // look for the user in the database by name
+      
       if ($login && $user->getFromDBbyName($login)) {
+         
          return $user;
       }
 
