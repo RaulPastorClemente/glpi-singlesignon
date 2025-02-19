@@ -1,5 +1,7 @@
 <?php
 
+use Glpi\Event;
+
 /**
  * ---------------------------------------------------------------------
  * SingleSignOn is a plugin which allows to use SSO for auth
@@ -1063,6 +1065,8 @@ class PluginSinglesignonProvider extends CommonDBTM {
    }
 
    public function findUser() {
+      global $DB;
+      
       $resource_array = $this->getResourceOwner();
 
       if (!$resource_array) {
@@ -1075,8 +1079,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
       $user = new User();
 
-      //??
-      //First: check linked user
+      // First: check linked user
       $id = Plugin::doHookFunction("sso:find_user", $resource_array);
       if (is_numeric($id) && $user->getFromDB($id)) {
          return $user;
@@ -1212,9 +1215,8 @@ class PluginSinglesignonProvider extends CommonDBTM {
          $count = $DB->result($result, 0, 'count');
          
          if ($count > 1) {
-            // log the issue
-            Toolbox::logDebug("SSO: Multiple users found with email: $email");
-            return false;
+            Event::log(0, "singlesignon", 3, "provider",
+            sprintf(__sso('Reconciliation failed: Multiple users found with email %s'), $email));
          }
          
          if ($user->getFromDBbyEmail($email, $default_condition)) {
@@ -1653,6 +1655,29 @@ class PluginSinglesignonProvider extends CommonDBTM {
       if (!$isOk) {
          Toolbox::logDebug("Failed to update user data with provider data for user {$user->fields['name']}");
       }
+   }
+
+   /**
+    * User deletion hook to remove linked users from the singlesignon table
+    * 
+    * @param User $user The user being deleted
+    */
+   public static function deleteUser(User $user) {
+      global $DB;
+      
+      if (!isset($user->fields['id'])) {
+         return;
+      }
+
+      $user_id = $user->fields['id'];
+      
+      // remove all SSO links for this user across all providers
+      $link = new PluginSinglesignonProvider_User();
+      $link->deleteByCriteria(
+         ['users_id' => $user_id],
+         false,
+         false
+      );
    }
 
 }
