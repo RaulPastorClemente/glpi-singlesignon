@@ -25,7 +25,7 @@
  * ---------------------------------------------------------------------
  */
 
-define('PLUGIN_SINGLESIGNON_VERSION', '1.3.5');
+define('PLUGIN_SINGLESIGNON_VERSION', '1.4.3');
 
 $folder = basename(dirname(__FILE__));
 
@@ -64,10 +64,14 @@ function plugin_init_singlesignon() {
       'config'  => 'PluginSinglesignonProvider',
    ];
 
+   // add hook for user deletion post action
+   $PLUGIN_HOOKS['item_purge']['singlesignon']['User'] = 'plugin_singlesignon_purgeUser';
+
    // redirect to single logout
-	if (strpos($_SERVER['REQUEST_URI'], 'front/logout.php') || strpos($_SERVER['REQUEST_URI'], 'front\logout.php')){
-		plugin_dispay_logout_singlesignon();
-	}
+   if (isset($_SERVER['REQUEST_URI']) && 
+       (strpos($_SERVER['REQUEST_URI'], 'front/logout.php') || strpos($_SERVER['REQUEST_URI'], 'front\logout.php'))) {
+       plugin_dispay_logout_singlesignon();
+   }
 
 }
 
