@@ -1440,6 +1440,19 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
       $link = new PluginSinglesignonProvider_User();
 
+      // check if user is already linked with the same identifier
+      $existing_links = $link->find([
+         'plugin_singlesignon_providers_id' => $this->fields['id'],
+         'remote_id' => $remote_id,
+         'users_id' => $user_id
+      ]);
+
+   
+      // user is linked with the same identifier, no action needed
+      if (!empty($existing_links)) {
+         return true;
+      }
+
       // Unlink from another user
       $link->deleteByCriteria([
          'plugin_singlesignon_providers_id' => $this->fields['id'],
@@ -1447,7 +1460,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       ],
       false,
       false
-   );
+      );
 
       return $link->add([
          'plugin_singlesignon_providers_id' => $this->fields['id'],
@@ -1456,7 +1469,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       ],
       false,
       false
-   );
+      );
    }
 
    /**
