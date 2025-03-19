@@ -25,16 +25,32 @@
  * ---------------------------------------------------------------------
  */
 
+use Glpi\Event;
+
 include ('../../../inc/includes.php');
 
 Session::checkRight("config", UPDATE);
 
-if ($_SESSION["glpiactiveprofile"]["interface"] == "central") {
-   Html::header(__sso('Single Sign-on'), $_SERVER['PHP_SELF'], "config", "pluginsinglesignonprovider", "");
-} else {
-   Html::helpHeader(__sso('Single Sign-on'), $_SERVER['PHP_SELF']);
+if (!isset($_GET["id"])) {
+   $_GET["id"] = "";
 }
 
-Search::show('PluginSinglesignonProvider');
+$mapping = new PluginSinglesignonProvider_Mapping();
+if (isset($_POST["update"])) {
+   if ($mapping->handleFormSubmission()) {
+      Event::log($_GET["id"], "singlesignon", 4, "mapping",
+            sprintf(__('%1$s updates the item %2$s'), $_SESSION["glpiname"], $_POST["name"]));
+      Html::redirect($mapping->getLinkURL());
+   }
+   Html::back();
+} else {
+   if ($_SESSION["glpiactiveprofile"]["interface"] == "central") {
+      Html::header(__sso('Field Mapping'), $_SERVER['PHP_SELF'], "config", "pluginsinglesignonprovider", "");
+   } else {
+      Html::helpHeader(__sso('Field Mapping'), $_SERVER['PHP_SELF']);
+   }
+
+   $mapping->display($_GET);
+}
 
 Html::footer();

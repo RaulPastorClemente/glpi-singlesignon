@@ -169,25 +169,25 @@ class PluginSinglesignonPreference extends CommonDBTM {
 
    function showFormDefault(CommonGLPI $item) {
       echo "<tr class='tab_bg_2'>";
-      echo "<td> " . __sso('Single Sign-on Provider') . "</td><td>";
 
-      foreach ($this->providers as $p) {
-         switch (get_class($item)) {
-            case 'User':
-               $redirect = $item->getFormURLWithID($this->user_id, true);
-               break;
-            case 'Preference':
-               $redirect = $item->getSearchURL(false);
-               break;
-            default:
-               $redirect = '';
-         }
+      // not used anymore on the user form
+      // foreach ($this->providers as $p) {
+      //    switch (get_class($item)) {
+      //       case 'User':
+      //          $redirect = $item->getFormURLWithID($this->user_id, true);
+      //          break;
+      //       case 'Preference':
+      //          $redirect = $item->getSearchURL(false);
+      //          break;
+      //       default:
+      //          $redirect = '';
+      //    }
 
-         $url = PluginSinglesignonToolbox::getCallbackUrl($p['id'], ['redirect' => $redirect]);
+      //    $url = PluginSinglesignonToolbox::getCallbackUrl($p['id'], ['redirect' => $redirect]);
 
-         echo PluginSinglesignonToolbox::renderButton($url, $p);
-         echo " ";
-      }
+      //    echo PluginSinglesignonToolbox::renderButton($url, $p);
+      //    echo " ";
+      // }
 
       echo "</td></tr>";
 

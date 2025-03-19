@@ -25,7 +25,7 @@
  * ---------------------------------------------------------------------
  */
 
-define('PLUGIN_SINGLESIGNON_VERSION', '1.3.5');
+define('PLUGIN_SINGLESIGNON_VERSION', '1.4.3');
 
 $folder = basename(dirname(__FILE__));
 
@@ -48,6 +48,10 @@ function plugin_init_singlesignon() {
       'addtabon' => ['Preference', 'User']
    ]);
 
+   Plugin::registerClass('PluginSinglesignonProvider_Mapping', [
+      'addtabon' => ['PluginSinglesignonProvider']
+   ]);
+
    $PLUGIN_HOOKS['csrf_compliant']['singlesignon'] = true;
 
    $PLUGIN_HOOKS['config_page']['singlesignon'] = 'front/provider.php';
@@ -59,6 +63,16 @@ function plugin_init_singlesignon() {
    $PLUGIN_HOOKS['menu_toadd']['singlesignon'] = [
       'config'  => 'PluginSinglesignonProvider',
    ];
+
+   // add hook for user deletion post action
+   $PLUGIN_HOOKS['item_purge']['singlesignon']['User'] = 'plugin_singlesignon_purgeUser';
+
+   // redirect to single logout
+   if (isset($_SERVER['REQUEST_URI']) && 
+       (strpos($_SERVER['REQUEST_URI'], 'front/logout.php') || strpos($_SERVER['REQUEST_URI'], 'front\logout.php'))) {
+       plugin_dispay_logout_singlesignon();
+   }
+
 }
 
 // Get the name and the version of the plugin - Needed
@@ -66,6 +80,7 @@ function plugin_version_singlesignon() {
    return [
       'name'           => __sso('Single Sign-on'),
       'version'        => PLUGIN_SINGLESIGNON_VERSION,
+      'license'        => 'GPLv3+',
       'author'         => 'Edgard Lorraine Messias',
       'homepage'       => 'https://github.com/edgardmessias/glpi-singlesignon',
       'minGlpiVersion' => '0.85'
@@ -90,6 +105,13 @@ function plugin_singlesignon_check_prerequisites() {
 
 function plugin_singlesignon_check_config() {
    return true;
+}
+
+function plugin_dispay_logout_singlesignon(){
+   if (isset($_SESSION["glpi_is_sso"]) && $_SESSION["glpi_is_sso"] == 1) {
+      $provider = new PluginSinglesignonProvider();
+      $provider->singleLogout();
+   }
 }
 
 function __sso($str) {

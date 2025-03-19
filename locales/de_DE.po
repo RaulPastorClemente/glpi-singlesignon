@@ -5,9 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: singlesignon 1.3.2\n"
-"Report-Msgid-Bugs-To: https://github.com/edgardmessias/glpi-singlesignon/"
-"issues\n"
-"POT-Creation-Date: 2024-04-06 10:00-0300\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-11-28 14:13+0000\n"
 "PO-Revision-Date: 2024-04-06 10:00-0300\n"
 "Last-Translator: invisiblemarcel\n"
 "Language-Team: none\n"
@@ -17,179 +16,210 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: front/callback.php:15
-msgid "Provider not defined."
-msgstr "Provider nicht definiert."
+#: inc/provider_mapping.class.php:49 inc/provider_mapping.class.php:53
+#: front/provider_mapping.form.php:48 front/provider_mapping.form.php:50
+msgid "Field Mapping"
+msgstr ""
 
-#: front/callback.php:21
-msgid "Provider not found."
-msgstr "Provider nicht gefunden."
+#: inc/provider_mapping.class.php:85
+#, fuzzy
+msgid "Given Name"
+msgstr "Name abtrennen"
 
-#: front/callback.php:25
-msgid "Provider not active."
-msgstr "Provider nicht aktiv."
+#: inc/provider_mapping.class.php:90
+msgid "Family Name"
+msgstr ""
 
-#: front/provider.form.php:61 front/provider.form.php:63 front/provider.php:8
-#: front/provider.php:10 inc/preference.class.php:64 inc/provider.class.php:59
-#: setup.php:40
+#: inc/provider_mapping.class.php:110
+msgid "Phone Number"
+msgstr ""
+
+#: inc/preference.class.php:89 inc/provider.class.php:87 front/provider.php:33
+#: front/provider.php:35 front/provider.form.php:86 front/provider.form.php:88
+#: setup.php:77
 msgid "Single Sign-on"
 msgstr "Single Sign-on"
 
-#: inc/preference.class.php:147 inc/provider.class.php:52
+#: inc/preference.class.php:172 inc/provider.class.php:80
 msgid "Single Sign-on Provider"
 msgstr "Single Sign-on Provider"
 
-#: inc/preference.class.php:172
+#: inc/preference.class.php:197
 msgid "Linked accounts"
 msgstr "Verlinkte Accounts"
 
-#: inc/provider.class.php:100
+#: inc/provider.class.php:129
 msgid "SSO Type"
 msgstr "SSO Typ"
 
-#: inc/provider.class.php:108 inc/provider.class.php:445
+#: inc/provider.class.php:137 inc/provider.class.php:496
 msgid "Client ID"
 msgstr "Client ID"
 
-#: inc/provider.class.php:110 inc/provider.class.php:453
+#: inc/provider.class.php:139 inc/provider.class.php:504
 msgid "Client Secret"
 msgstr "Client Secret"
 
-#: inc/provider.class.php:121 inc/provider.class.php:461
+#: inc/provider.class.php:150 inc/provider.class.php:512
 msgid "Scope"
 msgstr "Scope"
 
-#: inc/provider.class.php:123 inc/provider.class.php:469
+#: inc/provider.class.php:152 inc/provider.class.php:520
 msgid "Extra Options"
 msgstr "Weitere Optionen"
 
-#: inc/provider.class.php:128 inc/provider.class.php:477
+#: inc/provider.class.php:157 inc/provider.class.php:528
 msgid "Authorize URL"
 msgstr "URL Autorisierung"
 
-#: inc/provider.class.php:133 inc/provider.class.php:485
+#: inc/provider.class.php:162 inc/provider.class.php:536
 msgid "Access Token URL"
 msgstr "URL Access Token"
 
-#: inc/provider.class.php:138 inc/provider.class.php:493
+#: inc/provider.class.php:167 inc/provider.class.php:544
 msgid "Resource Owner Details URL"
 msgstr "URL Benutzerinfornmationen"
 
-#: inc/provider.class.php:145
+#: inc/provider.class.php:172 inc/provider.class.php:579
+msgid "Logout URL"
+msgstr ""
+
+#: inc/provider.class.php:179
 msgid "PopupAuth"
 msgstr "PopupAuth"
 
-#: inc/provider.class.php:151
+#: inc/provider.class.php:185
 msgid "SplitDomain"
 msgstr "Domäne abtrennen"
 
-#: inc/provider.class.php:168
-msgid "IsDefault"
-msgstr "Ist Standard"
-
-#: inc/provider.class.php:188
-msgid "Use Email as Login"
-msgstr "E-Mail als Login benutzen"
-
-#: inc/provider.class.php:191
-msgid "Split Name"
-msgstr "Name abtrennen"
-
-#: inc/provider.class.php:155
+#: inc/provider.class.php:189
 msgid "AuthorizedDomains"
 msgstr "Erlaubte Domänen"
 
-#: inc/provider.class.php:157
+#: inc/provider.class.php:191
 msgid "AuthorizedDomainsTooltip"
 msgstr "Erlaubte Domänen Hinweis"
 
-#: inc/provider.class.php:246
+#: inc/provider.class.php:197
+msgid "Use Email as Login"
+msgstr "E-Mail als Login benutzen"
+
+#: inc/provider.class.php:200
+msgid "Split Name"
+msgstr "Name abtrennen"
+
+#: inc/provider.class.php:205 inc/provider.class.php:587
+#, fuzzy
+msgid "Use Single Logout"
+msgstr "Teste Single Sign-on"
+
+#: inc/provider.class.php:294
 msgid "Callback URL"
 msgstr "Callback URL"
 
-#: inc/provider.class.php:250
+#: inc/provider.class.php:298
 msgid "Test Single Sign-on"
 msgstr "Teste Single Sign-on"
 
-#: inc/provider.class.php:308
+#: inc/provider.class.php:357
 msgid "A Name is required"
 msgstr "Es wird ein Name benötigt."
 
-#: inc/provider.class.php:314
+#: inc/provider.class.php:363
 #, php-format
 msgid "The \"%s\" is a Invalid type"
 msgstr "Der Typ \"%s\" ist nicht gültig"
 
-#: inc/provider.class.php:318
+#: inc/provider.class.php:367
 msgid "A Client ID is required"
 msgstr "Eine Client ID ist notwendig"
 
-#: inc/provider.class.php:322
+#: inc/provider.class.php:371
 msgid "A Client Secret is required"
 msgstr "Ein Client Secret ist notwendig"
 
-#: inc/provider.class.php:327
+#: inc/provider.class.php:376
 msgid "An Authorize URL is required"
 msgstr "Eine Autorisierungs URL ist notwendig"
 
-#: inc/provider.class.php:329
+#: inc/provider.class.php:378
 msgid "The Authorize URL is invalid"
 msgstr "Die Autorisierungs URL ist nicht gültig"
 
-#: inc/provider.class.php:333
+#: inc/provider.class.php:382
 msgid "An Access Token URL is required"
 msgstr "Eine Access Token URL ist notwendig"
 
-#: inc/provider.class.php:335
+#: inc/provider.class.php:384
 msgid "The Access Token URL is invalid"
 msgstr "Die Access Token URL ist nicht gültig"
 
-#: inc/provider.class.php:339
+#: inc/provider.class.php:388
 msgid "A Resource Owner Details URL is required"
 msgstr "Eine Benutzerinfornmationen URL ist notwendig"
 
-#: inc/provider.class.php:341
+#: inc/provider.class.php:390
 msgid "The Resource Owner Details URL is invalid"
 msgstr "Die Benutzerinfornmationen URL ist nicht gültig"
 
-#: inc/provider.class.php:552
+#: inc/provider.class.php:637
 msgid "Generic"
 msgstr "Generisch"
 
-#: inc/provider.class.php:553
+#: inc/provider.class.php:638
 msgid "Azure"
 msgstr "Azure"
 
-#: inc/provider.class.php:554
+#: inc/provider.class.php:639
 msgid "Facebook"
 msgstr "Facebook"
 
-#: inc/provider.class.php:555
+#: inc/provider.class.php:640
 msgid "GitHub"
 msgstr "GitHub"
 
-#: inc/provider.class.php:556
+#: inc/provider.class.php:641
 msgid "Google"
 msgstr "Google"
 
-#: inc/provider.class.php:557
+#: inc/provider.class.php:642
 msgid "Instagram"
 msgstr "Instagram"
 
-#: inc/provider.class.php:558
+#: inc/provider.class.php:643
 msgid "LinkdeIn"
 msgstr "LinkdeIn"
 
-#: inc/toolbox.class.php:166
+#: inc/toolbox.class.php:195
 #, php-format
 msgid "Login with %s"
 msgstr "Login mit %s"
 
-#: setup.php:8
+#: front/callback.php:40
+msgid "Provider not defined."
+msgstr "Provider nicht definiert."
+
+#: front/callback.php:46
+msgid "Provider not found."
+msgstr "Provider nicht gefunden."
+
+#: front/callback.php:50
+msgid "Provider not active."
+msgstr "Provider nicht aktiv."
+
+#: front/callback.php:117
+msgid "Automatic redirection, else click"
+msgstr ""
+
+#: setup.php:33
 #, php-format
 msgid "Please, rename the plugin folder \"%s\" to \"singlesignon\""
-msgstr "Bitte benenne das Plugin Verzeichnis von \"%s\" in \"singlesignon\" um."
+msgstr ""
+"Bitte benenne das Plugin Verzeichnis von \"%s\" in \"singlesignon\" um."
 
-#: setup.php:57
+#: setup.php:95
 msgid "This plugin requires GLPI >= 0.85"
 msgstr "Das Plugin benötigt mindestens GLPI Version 0.85"
+
+#~ msgid "IsDefault"
+#~ msgstr "Ist Standard"

@@ -213,34 +213,37 @@ function plugin_singlesignon_install() {
    }
 
    Config::setConfigurationValues('singlesignon', $current);
+   $default_key_sign = DBConnection::getDefaultPrimaryKeySignOption();
 
    if (!sso_TableExists("glpi_plugin_singlesignon_providers")) {
       $query = "CREATE TABLE `glpi_plugin_singlesignon_providers` (
-                  `id`                         int(11) NOT NULL auto_increment,
+                  `id`                         INT {$default_key_sign} NOT NULL auto_increment,
                   `is_default`                 tinyint(1) NOT NULL DEFAULT '0',
                   `popup`                      tinyint(1) NOT NULL DEFAULT '0',
                   `split_domain`               tinyint(1) NOT NULL DEFAULT '0',
-                  `authorized_domains`         varchar(255) COLLATE utf8_unicode_ci NULL,
-                  `type`                       varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-                  `name`                       varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-                  `client_id`                  varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-                  `client_secret`              varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-                  `scope`                      varchar(255) COLLATE utf8_unicode_ci NULL,
-                  `extra_options`              varchar(255) COLLATE utf8_unicode_ci NULL,
-                  `url_authorize`              varchar(255) COLLATE utf8_unicode_ci NULL,
-                  `url_access_token`           varchar(255) COLLATE utf8_unicode_ci NULL,
-                  `url_resource_owner_details` varchar(255) COLLATE utf8_unicode_ci NULL,
+                  `authorized_domains`         varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `type`                       varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                  `name`                       varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                  `client_id`                  varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                  `client_secret`              varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                  `scope`                      varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `extra_options`              varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `url_authorize`              varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `url_access_token`           varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `url_resource_owner_details` varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `url_logout`                 varchar(255) COLLATE utf8mb4_unicode_ci NULL,
+                  `use_single_logout`          tinyint(1) NOT NULL DEFAULT '0',
                   `is_active`                  tinyint(1) NOT NULL DEFAULT '0',
                   `use_email_for_login`        tinyint(1) NOT NULL DEFAULT '0',
                   `split_name`                 tinyint(1) NOT NULL DEFAULT '0',
                   `is_deleted`                 tinyint(1) NOT NULL default '0',
-                  `comment`                    text COLLATE utf8_unicode_ci,
+                  `comment`                    text COLLATE utf8mb4_unicode_ci,
                   `date_mod`                   timestamp NULL DEFAULT NULL,
                   `date_creation`              timestamp NULL DEFAULT NULL,
                   PRIMARY KEY (`id`),
                   KEY `date_mod` (`date_mod`),
                   KEY `date_creation` (`date_creation`)
-               ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
+               ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
       $DB->query($query) or die("error creating glpi_plugin_singlesignon_providers " . $DB->error());
    } else {
@@ -263,7 +266,7 @@ function plugin_singlesignon_install() {
       $query = "SHOW COLUMNS FROM glpi_plugin_singlesignon_providers LIKE 'authorized_domains'";
       $result = $DB->query($query) or die($DB->error());
       if ($DB->numrows($result) != 1) {
-         $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD authorized_domains varchar(255) COLLATE utf8_unicode_ci NULL") or die($DB->error());
+         $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD authorized_domains varchar(255) COLLATE utf8mb4_unicode_ci NULL") or die($DB->error());
       }
       $query = "SHOW COLUMNS FROM glpi_plugin_singlesignon_providers LIKE 'use_email_for_login'";
       $result = $DB->query($query) or die($DB->error());
@@ -275,6 +278,36 @@ function plugin_singlesignon_install() {
       if ($DB->numrows($result) != 1) {
          $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD split_name tinyint(1) NOT NULL DEFAULT '0'") or die($DB->error());
       }
+      $query = "SHOW COLUMNS FROM glpi_plugin_singlesignon_providers LIKE 'url_logout'";
+      $result = $DB->query($query) or die($DB->error());
+      if ($DB->numrows($result) != 1) {
+         $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD url_logout varchar(255) COLLATE utf8mb4_unicode_ci NULL") or die($DB->error());
+      }
+      $query = "SHOW COLUMNS FROM glpi_plugin_singlesignon_providers LIKE 'use_single_logout'";
+      $result = $DB->query($query) or die($DB->error());
+      if ($DB->numrows($result) != 1) {
+         $DB->query("ALTER TABLE glpi_plugin_singlesignon_providers ADD use_single_logout tinyint(1) NOT NULL DEFAULT '0'") or die($DB->error());
+      }
+   }
+
+   // Create the mapping table
+   if (!sso_TableExists("glpi_plugin_singlesignon_providers_mappings")) {
+      $query = "CREATE TABLE `glpi_plugin_singlesignon_providers_mappings` (
+                  `id`                         INT {$default_key_sign} NOT NULL auto_increment,
+                  `plugin_singlesignon_providers_id` INT {$default_key_sign} NOT NULL DEFAULT '0',
+                  `name`                       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `given_name`                 varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `family_name`                varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `picture`                    varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `email`                      varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `locale`                     varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `phone_number`               varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `group`                      varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                  `date_mod`                   timestamp NULL DEFAULT NULL,
+                  PRIMARY KEY (`id`)
+               ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+      $DB->query($query) or die("error creating glpi_plugin_singlesignon_providers_mappings " . $DB->error());
    }
 
    // add display preferences
@@ -292,21 +325,21 @@ function plugin_singlesignon_install() {
 
    if (!sso_TableExists("glpi_plugin_singlesignon_providers_users") && version_compare($currentVersion, "1.2.0", '<')) {
       $query = "ALTER TABLE `glpi_plugin_singlesignon_providers`
-                ADD `picture` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+                ADD `picture` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
                 ADD `bgcolor` varchar(7) DEFAULT NULL,
                 ADD `color` varchar(7) DEFAULT NULL";
       $DB->query($query) or die("error adding picture column " . $DB->error());
    }
    if (!sso_TableExists("glpi_plugin_singlesignon_providers_users") && version_compare($currentVersion, "1.3.0", '<')) {
       $query = "CREATE TABLE `glpi_plugin_singlesignon_providers_users` (
-         `id` int(11) NOT NULL AUTO_INCREMENT,
-         `plugin_singlesignon_providers_id` int(11) NOT NULL DEFAULT '0',
-         `users_id` int(11) NOT NULL DEFAULT '0',
-         `remote_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+         `id` INT {$default_key_sign} NOT NULL AUTO_INCREMENT,
+         `plugin_singlesignon_providers_id` int(11) UNSIGNED NOT NULL DEFAULT '0',
+         `users_id` int(11) UNSIGNED NOT NULL DEFAULT '0',
+         `remote_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
          PRIMARY KEY (`id`),
          UNIQUE KEY `unicity` (`plugin_singlesignon_providers_id`,`users_id`),
          UNIQUE KEY `unicity_remote` (`plugin_singlesignon_providers_id`,`remote_id`)
-       ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;";
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
       $DB->query($query) or die("error creating glpi_plugin_singlesignon_providers_users " . $DB->error());
    }
 
@@ -336,5 +369,17 @@ function plugin_singlesignon_uninstall() {
       $DB->query($query) or die("error deleting glpi_plugin_singlesignon_providers");
    }
 
+   // Drop the mapping table
+   if (sso_TableExists("glpi_plugin_singlesignon_providers_mappings")) {
+      $query = "DROP TABLE `glpi_plugin_singlesignon_providers_mappings`";
+      $DB->query($query) or die("error deleting glpi_plugin_singlesignon_providers_mappings");
+   }
+
    return true;
+
+}
+
+function plugin_singlesignon_purgeUser($item) {
+   $provider = new PluginSinglesignonProvider();
+   $provider->deleteUser($item);
 }

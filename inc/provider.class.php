@@ -1,5 +1,7 @@
 <?php
 
+use Glpi\Event;
+
 /**
  * ---------------------------------------------------------------------
  * SingleSignOn is a plugin which allows to use SSO for auth
@@ -56,6 +58,9 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
    public $debug = false;
 
+   private $mappings = [];
+   private $user_data = [];
+
    public static function canCreate() {
       return static::canUpdate();
    }
@@ -85,14 +90,15 @@ class PluginSinglesignonProvider extends CommonDBTM {
    }
 
    function defineTabs($options = []) {
-
       $ong = [];
       $this->addDefaultFormTab($ong);
       $this->addStandardTab(__CLASS__, $ong, $options);
+      // Add a custom tab for fields mapping
+      $this->addStandardTab('PluginSinglesignonProvider_Mapping', $ong, $options);
       $this->addStandardTab('Log', $ong, $options);
 
       return $ong;
-   }
+  }
 
    function post_getEmpty() {
       $this->fields["type"] = 'generic';
@@ -165,7 +171,12 @@ class PluginSinglesignonProvider extends CommonDBTM {
       echo "</tr>\n";
 
       echo "<tr class='tab_bg_1'>";
-      echo "<td>" . __('IsDefault', 'singlesignon') . "</td><td>";
+      echo "<td>" . __sso('Logout URL') . "</td>";
+      echo "<td colspan='3'><input type='text' style='width:96%' name='url_logout' value='" . $this->fields["url_logout"] . "'></td>";
+      echo "</tr>\n";
+
+      echo "<tr class='tab_bg_1'>";
+      echo "<td>" . __sso('Is Default', 'singlesignon') . "</td><td>";
       Dropdown::showYesNo("is_default", $this->fields["is_default"]);
       echo "<td>" . __sso('PopupAuth') . "</td>";
       echo "<td>";
@@ -193,6 +204,12 @@ class PluginSinglesignonProvider extends CommonDBTM {
       echo "</td>";
 
       echo "<tr class='tab_bg_1'>";
+      echo "<td>" . __sso('Use Single Logout') . "</td>";
+      echo "<td>";
+      Dropdown::showYesNo("use_single_logout", $this->fields["use_single_logout"]);
+      echo "</td></tr>\n";
+
+      echo "<tr class='tab_bg_1'>";
       echo "<th colspan='4'>" . __('Personalization') . "</th>";
       echo "</tr>\n";
 
@@ -202,7 +219,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       Html::showColorField(
          'bgcolor',
          [
-            'value'  => $this->fields['bgcolor'],
+            'value'  => $this->fields['bgcolor'] ?? '',
          ]
       );
       echo "&nbsp;";
@@ -218,7 +235,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       Html::showColorField(
          'color',
          [
-            'value'  => $this->fields['color'],
+            'value'  => $this->fields['color'] ?? '',
          ]
       );
       echo "&nbsp;";
@@ -417,6 +434,15 @@ class PluginSinglesignonProvider extends CommonDBTM {
          }
       }
 
+      // single logout
+      if (isset($input['url_logout'])) {
+         $input['url_logout'] = trim($input['url_logout']);
+      }
+
+      if (isset($input['use_single_logout'])) {
+         $input['use_sso_logout'] = (int)$input['use_single_logout'];
+      }
+
       return $input;
    }
 
@@ -549,6 +575,22 @@ class PluginSinglesignonProvider extends CommonDBTM {
       ];
 
       $tab[] = [
+         'id' => 13,
+         'table' => $this->getTable(),
+         'field' => 'url_logout',
+         'name' => __sso('Logout URL'),
+         'datatype' => 'text',
+      ];
+
+      $tab[] = [
+         'id' => 14,
+         'table' => $this->getTable(),
+         'field' => 'use_single_logout',
+         'name' => __sso('Use Single Logout'),
+         'datatype' => 'bool',
+      ];
+
+      $tab[] = [
          'id' => 30,
          'table' => $this->getTable(),
          'field' => 'id',
@@ -651,25 +693,6 @@ class PluginSinglesignonProvider extends CommonDBTM {
       return Dropdown::showFromArray($name, $items, $params);
    }
 
-   /**
-    * Get an history entry message
-    *
-    * @param $data Array from glpi_logs table
-    *
-    * @since GLPI version 0.84
-    *
-    * @return string
-    * */
-   static function getHistoryEntry($data) {
-
-      switch ($data['linked_action'] - Log::HISTORY_PLUGIN) {
-         case 0:
-            return __('History from plugin example', 'example');
-      }
-
-      return '';
-   }
-
    //////////////////////////////
    ////// SPECIFIC MODIF MASSIVE FUNCTIONS ///////
 
@@ -683,78 +706,8 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $actions = parent::getSpecificMassiveActions($checkitem);
 
       $actions['Document_Item' . MassiveAction::CLASS_ACTION_SEPARATOR . 'add'] = _x('button', 'Add a document');         // GLPI core one
-      $actions[__CLASS__ . MassiveAction::CLASS_ACTION_SEPARATOR . 'do_nothing'] = __('Do Nothing - just for fun', 'example');  // Specific one
 
       return $actions;
-   }
-
-   /**
-    * @since version 0.85
-    *
-    * @see CommonDBTM::showMassiveActionsSubForm()
-    * */
-   static function showMassiveActionsSubForm(MassiveAction $ma) {
-
-      switch ($ma->getAction()) {
-         case 'DoIt':
-            echo "&nbsp;<input type='hidden' name='toto' value='1'>" . Html::submit(_x('button', 'Post'), ['name' => 'massiveaction']) . " " . __('Write in item history', 'example');
-            return true;
-         case 'do_nothing':
-            echo "&nbsp;" . Html::submit(_x('button', 'Post'), ['name' => 'massiveaction']) . " " . __('but do nothing :)', 'example');
-            return true;
-      }
-      return parent::showMassiveActionsSubForm($ma);
-   }
-
-   /**
-    * @since version 0.85
-    *
-    * @see CommonDBTM::processMassiveActionsForOneItemtype()
-    * */
-   static function processMassiveActionsForOneItemtype(MassiveAction $ma, CommonDBTM $item, array $ids) {
-      global $DB;
-
-      switch ($ma->getAction()) {
-         case 'DoIt':
-            if ($item->getType() == 'Computer') {
-               Session::addMessageAfterRedirect(__("Right it is the type I want...", 'example'));
-               Session::addMessageAfterRedirect(__('Write in item history', 'example'));
-               $changes = [0, 'old value', 'new value'];
-               foreach ($ids as $id) {
-                  if ($item->getFromDB($id)) {
-                     Session::addMessageAfterRedirect("- " . $item->getField("name"));
-                     Log::history($id, 'Computer', $changes, 'PluginExampleExample', Log::HISTORY_PLUGIN);
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
-                  } else {
-                     // Example of ko count
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
-                  }
-               }
-            } else {
-               // When nothing is possible ...
-               $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
-            }
-            return;
-
-         case 'do_nothing':
-            if ($item->getType() == 'PluginExampleExample') {
-               Session::addMessageAfterRedirect(__("Right it is the type I want...", 'example'));
-               Session::addMessageAfterRedirect(__("But... I say I will do nothing for:", 'example'));
-               foreach ($ids as $id) {
-                  if ($item->getFromDB($id)) {
-                     Session::addMessageAfterRedirect("- " . $item->getField("name"));
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
-                  } else {
-                     // Example for noright / Maybe do it with can function is better
-                     $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
-                  }
-               }
-            } else {
-               $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
-            }
-            return;
-      }
-      parent::processMassiveActionsForOneItemtype($ma, $item, $ids);
    }
 
    static function getIcon() {
@@ -1112,16 +1065,22 @@ class PluginSinglesignonProvider extends CommonDBTM {
    }
 
    public function findUser() {
+      global $DB;
+      
       $resource_array = $this->getResourceOwner();
 
       if (!$resource_array) {
          return false;
       }
+      // get mappings
+      $this->mappings = $this->getMappings();
+      $mappings = $this->mappings;
+      $this->user_data = $resource_array;
 
       $user = new User();
-      //First: check linked user
-      $id = Plugin::doHookFunction("sso:find_user", $resource_array);
 
+      // First: check linked user
+      $id = Plugin::doHookFunction("sso:find_user", $resource_array);
       if (is_numeric($id) && $user->getFromDB($id)) {
          return $user;
       }
@@ -1129,6 +1088,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
       $remote_id = false;
       $remote_id_fields = ['id', 'username', 'sub'];
 
+      // first non empty remote_id field will be used
       foreach ($remote_id_fields as $field) {
          if (isset($resource_array[$field]) && !empty($resource_array[$field])) {
             $remote_id = $resource_array[$field];
@@ -1136,6 +1096,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
          }
       }
 
+      // find user_id within our stored remote_ids and provider_ids (if any)
       if ($remote_id) {
          $link = new PluginSinglesignonProvider_User();
          $condition = "`remote_id` = '{$remote_id}' AND `plugin_singlesignon_providers_id` = {$this->fields['id']}";
@@ -1150,6 +1111,7 @@ class PluginSinglesignonProvider extends CommonDBTM {
          $remote_id;
       }
 
+      // get the user if we have an id
       if (is_numeric($id) && $user->getFromDB($id)) {
          return $user;
       }
@@ -1163,7 +1125,14 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
       // check email first
       $email = false;
-      $email_fields = ['email', 'e-mail', 'email-address', 'mail'];
+
+      // use mapped email field if it exists
+      if (isset($mappings['email']) && isset($resource_array[$mappings['email']])) {
+         $email = $resource_array[$mappings['email']];
+         $email_fields = [$mappings['email']];
+      } else {
+         $email_fields = ['email', 'e-mail', 'email-address', 'mail'];
+      }
 
       foreach ($email_fields as $field) {
          if (isset($resource_array[$field]) && is_string($resource_array[$field])) {
@@ -1190,7 +1159,13 @@ class PluginSinglesignonProvider extends CommonDBTM {
       if ($email && $use_email) {
          $login = $email;
       } else {
-         $login_fields = ['userPrincipalName', 'login', 'username', 'id', 'name', 'displayName'];
+
+         // if mappings are set we use the "name" mapping as the login. doesnt apply if use_email_for_login is set
+         if (isset($mappings['name']) && isset($resource_array[$mappings['name']])) {
+            $login_fields = [$mappings['name']];
+         } else {
+            $login_fields = ['userPrincipalName', 'login', 'username', 'id', 'name', 'displayName'];
+         }
 
          foreach ($login_fields as $field) {
             if (isset($resource_array[$field]) && is_string($resource_array[$field])) {
@@ -1214,7 +1189,10 @@ class PluginSinglesignonProvider extends CommonDBTM {
          }
       }
 
+      // look for the user in the database by name
+      
       if ($login && $user->getFromDBbyName($login)) {
+         
          return $user;
       }
 
@@ -1224,15 +1202,31 @@ class PluginSinglesignonProvider extends CommonDBTM {
          $default_condition = [];
       }
 
-      $bOk = true;
-      if ($email && $user->getFromDBbyEmail($email, $default_condition)) {
-         return $user;
-      } else {
-         $bOk = false;
+      // handle duplicate emails
+      if ($email) {
+         $users_table = getTableForItemType('User');
+         $email_table = 'glpi_useremails';
+         
+         $query = "SELECT COUNT(DISTINCT u.id) as count 
+                   FROM $users_table u 
+                   JOIN $email_table e ON e.users_id = u.id 
+                   WHERE e.email = '$email'";
+                   
+         $result = $DB->query($query);
+         $count = $DB->result($result, 0, 'count');
+         
+         if ($count > 1) {
+            Event::log(0, "singlesignon", 3, "provider",
+            sprintf(__sso('Reconciliation failed: Multiple users found with email %s'), $email));
+         }
+         
+         if ($user->getFromDBbyEmail($email, $default_condition)) {
+            return $user;
+         }
       }
+      $bOk = false;
 
-      // var_dump($bOk);
-      // die();
+      // nb: mappings are implemented for generic providers only
 
       // If the user does not exist in the database and the provider is google
       if (static::getClientType() == "google" && !$bOk) {
@@ -1276,8 +1270,46 @@ class PluginSinglesignonProvider extends CommonDBTM {
             $tokenAPI = base_convert(hash('sha256', time() . mt_rand()), 16, 36);
             $tokenPersonnel = base_convert(hash('sha256', time() . mt_rand()), 16, 36);
 
+            // if split name is enabled
             $splitname = $this->fields['split_name'];
-            $firstLastArray = ($splitname) ? preg_split('/ /', $resource_array['name'], 2) : preg_split('/ /', $resource_array['displayName'], 2);
+            $firstLastArray = ['', ''];
+            if ($splitname) {
+               if (isset($resource_array['name']) && !empty($resource_array['name'])) {
+                  $firstLastArray = preg_split('/ /', $resource_array['name'], 2);
+               } elseif (isset($resource_array['displayName']) && !empty($resource_array['displayName'])) {
+                  $firstLastArray = preg_split('/ /', $resource_array['displayName'], 2);
+               }
+            }
+
+            // if mappings are set for first and last name, we overwrite the splitname with the mappings
+            if(isset($mappings['family_name']) && !empty($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) 
+               && isset($mappings['given_name']) && !empty($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
+               $firstLastArray = [$resource_array[$mappings['given_name']], $resource_array[$mappings['family_name']]];
+            }
+
+            // process the remaining mappings before user creation
+            // image
+            $image = '';
+            if (isset($mappings['picture']) && isset($resource_array[$mappings['picture']])) {
+               $image = $resource_array[$mappings['picture']];
+            }
+
+            // locale (language)
+            $locale = '';
+            if (isset($mappings['locale']) && isset($resource_array[$mappings['locale']])) {
+               $locale = $resource_array[$mappings['locale']];
+            }
+
+            // phone number
+            $phone = '';
+            if (isset($mappings['phone_number']) && isset($resource_array[$mappings['phone_number']])) {
+               $phone = $resource_array[$mappings['phone_number']];
+            }
+
+            $group = '';
+            if (isset($mappings['group']) && isset($resource_array[$mappings['group']])) {
+               $group = $resource_array[$mappings['group']];
+            }
 
             $userPost = [
                'name' => $login,
@@ -1286,7 +1318,10 @@ class PluginSinglesignonProvider extends CommonDBTM {
                'firstname' => $firstLastArray[0],
                'api_token' => $tokenAPI,
                'personal_token' => $tokenPersonnel,
-               'is_active' => 1
+               'is_active' => 1,
+               'picture' => $image,
+               'language' => $locale,
+               'phone' => $phone,
             ];
 
             // Set the office location from Office 365 user as entity for the GLPI new user if they names match
@@ -1304,10 +1339,8 @@ class PluginSinglesignonProvider extends CommonDBTM {
                $userPost['_useremails'][-1] = $email;
             }
 
-            //$user->check(-1, CREATE, $userPost);
+            // adding the user
             $newID = $user->add($userPost);
-
-            // var_dump($newID);
 
             $profils = 0;
             // Verification default profiles exist in the entity
@@ -1343,8 +1376,13 @@ class PluginSinglesignonProvider extends CommonDBTM {
                }
             }
 
+            if ($group) {
+               $this->processGroups($group, $newID);
+            }
+
             return $user;
          } catch (\Exception $ex) {
+            Toolbox::logDebug("Exception during user creation: " . $ex->getMessage());
             return false;
          }
       }
@@ -1354,12 +1392,12 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
    public function login() {
       $user = $this->findUser();
-
       if (!$user) {
          return false;
       }
 
-      //Create fake auth
+      $this->updateUserData($user->getID());
+
       $auth = new Auth();
       $auth->user = $user;
       $auth->auth_succeded = true;
@@ -1373,6 +1411,9 @@ class PluginSinglesignonProvider extends CommonDBTM {
       return $auth->auth_succeded;
    }
 
+   /**
+    * Link a user to the provider
+    */
    public function linkUser($user_id) {
       $user = new User();
 
@@ -1402,16 +1443,242 @@ class PluginSinglesignonProvider extends CommonDBTM {
 
       $link = new PluginSinglesignonProvider_User();
 
+      // check if user is already linked with the same identifier
+      $existing_links = $link->find([
+         'plugin_singlesignon_providers_id' => $this->fields['id'],
+         'remote_id' => $remote_id,
+         'users_id' => $user_id
+      ]);
+
+   
+      // user is linked with the same identifier, no action needed
+      if (!empty($existing_links)) {
+         return true;
+      }
+
       // Unlink from another user
       $link->deleteByCriteria([
          'plugin_singlesignon_providers_id' => $this->fields['id'],
          'remote_id' => $remote_id,
-      ]);
+      ],
+      false,
+      false
+      );
 
       return $link->add([
          'plugin_singlesignon_providers_id' => $this->fields['id'],
          'users_id' => $user_id,
          'remote_id' => $remote_id,
-      ]);
+      ],
+      false,
+      false
+      );
    }
+
+   /**
+    * Fetch the mappings for the provider
+    *
+    * @return array
+    */
+   public function getMappings() {
+      global $DB;
+
+      $query = "SELECT * FROM glpi_plugin_singlesignon_providers_mappings WHERE plugin_singlesignon_providers_id = " . intval($this->fields['id']);
+      $result = $DB->query($query);
+
+      $mappings = $DB->fetchAssoc($result);
+      
+      return $mappings;
+   }
+
+    /**
+     * Process groups for the user
+     *
+     * @param string $group
+     * @param int $user_id
+     */
+    private function processGroups($group, $user_id) {
+        global $DB;
+
+        if (is_array($group)) {
+            $group = implode(',', $group);
+        }
+
+        $group_names = explode(',', $group);
+
+        // check if user is already associated with the group
+        $query = "SELECT `glpi_groups_users`.`groups_id`, `completename` FROM `glpi_groups_users` LEFT JOIN `glpi_groups` ON `glpi_groups_users`.`groups_id` = `glpi_groups`.`id` WHERE `users_id` = '$user_id'";
+        $result = $DB->query($query);
+        $existing_groups = [];
+        if ($result) {
+            while ($data = $DB->fetchAssoc($result)) {
+                $existing_groups[] = $data['completename'];
+            }
+        }
+
+        // add the user to the group if they are not already in it
+        foreach ($group_names as $group_name) {
+            $group_name = trim($group_name);
+            if (in_array($group_name, $existing_groups)) {
+               // skip if the user is already in the group
+                continue;
+            }
+
+            // check if the group exists
+            $request = $DB->request('glpi_groups', ['completename' => $group_name]);
+            if ($data = $request->next()) {
+                $id_group_create = $data['id'];
+            } else {
+                // create the group if it doesn't exist
+                $query = "INSERT IGNORE INTO `glpi_groups` (`name`, `completename`) VALUES ('$group_name', '$group_name')";
+                $DB->queryOrDie($query);
+                $query = "SELECT `id` FROM `glpi_groups` WHERE `completename` = '$group_name'";
+                $result = $DB->query($query);
+                $id_group_create = $DB->fetchAssoc($result)['id'];
+            }
+
+            // link the user to the group
+            $query = "INSERT IGNORE INTO `glpi_groups_users` (`users_id`, `groups_id`) VALUES ('$user_id', '$id_group_create')";
+            $DB->queryOrDie($query);
+        }
+    }
+
+   /**
+    * Single Logout implementation
+    */
+   public function singleLogout() {
+      global $DB;
+      // need to identify the provider linked to the user
+      $user = Session::getLoginUserID();
+      $provider = new PluginSinglesignonProvider();
+      $query = "SELECT * FROM glpi_plugin_singlesignon_providers_users WHERE users_id = " . intval($user);
+      $result = $DB->query($query);
+      $data = $DB->fetchAssoc($result);
+
+      // check if we found a provider link
+      if (!$data) {
+         Toolbox::logDebug("No provider entry found for user {$user}");
+         return;
+      }
+
+      $provider_id = $data['plugin_singlesignon_providers_id'];
+
+      if (!$provider->getFromDB($provider_id)) {
+         Toolbox::logDebug("Failed to load provider {$provider_id}");
+         return;
+      }
+
+      $sign_out_endpoint = $provider->fields['url_logout'];
+
+      // if no sign-out URL is provided for the provider
+      if (empty($sign_out_endpoint)) {
+         Toolbox::logDebug("No sign-out URL provided for provider {$provider->fields['name']}");
+      }
+
+      if (isset($provider->fields['use_single_logout']) && $provider->fields['use_single_logout'] == 1) {
+         // destroying session and cookies
+         Session::destroy();
+         Auth::setRememberMeCookie('');
+
+         // redirect to provider's sign out
+         header("Location: $sign_out_endpoint");
+         exit();
+      }
+   }
+
+   /**
+    * Update user data from provider, will be called after login
+    */
+   function updateUserData($user_id) {
+      global $DB;
+      $user = new User();
+      $user->getFromDB($user_id);
+
+      $resource_array = $this->user_data;
+      $mappings = $this->mappings;
+
+      // name
+      if (isset($mappings['name']) && !empty($mappings['name']) && isset($resource_array[$mappings['name']])) {
+         $user->fields['name'] = $resource_array[$mappings['name']];
+      }
+
+      // email
+      if (isset($mappings['email']) && !empty($mappings['email']) && isset($resource_array[$mappings['email']])) {
+         $user->fields['_useremails'][-1] = $resource_array[$mappings['email']];
+         $querry = "INSERT IGNORE INTO `glpi_useremails` (`id`, `users_id`, `is_default`, `is_dynamic`, `email`) VALUES ('0', '$user_id', '1', '0', '{$resource_array[$mappings['email']]}')";
+         $DB->queryOrDie($querry);
+      }  
+
+      // if split name is enabled
+      $splitname = $this->fields['split_name'];
+      $firstLastArray = ['', ''];
+      if ($splitname) {
+         if (isset($resource_array['name']) && !empty($resource_array['name'])) {
+            $firstLastArray = preg_split('/ /', $resource_array['name'], 2);
+         } elseif (isset($resource_array['displayName']) && !empty($resource_array['displayName'])) {
+            $firstLastArray = preg_split('/ /', $resource_array['displayName'], 2);
+         }
+      }
+
+      // if mappings are set for first and last name, we overwrite the splitname with the mappings
+      if(isset($mappings['family_name']) && !empty($mappings['family_name']) && isset($resource_array[$mappings['family_name']]) 
+         && isset($mappings['given_name']) && !empty($mappings['given_name']) && isset($resource_array[$mappings['given_name']])) {
+         $firstLastArray = [$resource_array[$mappings['given_name']], $resource_array[$mappings['family_name']]];
+      }
+      // realname (split name)
+      if (!empty($firstLastArray[1])) {
+         $user->fields['realname'] = $firstLastArray[1];
+      }
+      // firstname (split name)
+      if (!empty($firstLastArray[0])) {
+         $user->fields['firstname'] = $firstLastArray[0];
+      }
+      // picture
+      if (isset($mappings['picture']) && !empty($mappings['picture']) && isset($resource_array[$mappings['picture']])) {
+         $user->fields['picture'] = $resource_array[$mappings['picture']];
+      }
+
+      // language
+      if (isset($mappings['locale']) && !empty($mappings['locale']) && isset($resource_array[$mappings['locale']])) {
+         $user->fields['language'] = $resource_array[$mappings['locale']];
+      }
+
+      // phone
+      if (isset($mappings['phone_number']) && !empty($mappings['phone_number']) && isset($resource_array[$mappings['phone_number']])) {
+         $user->fields['phone'] = $resource_array[$mappings['phone_number']];
+      }
+      // group
+      if (isset($mappings['group']) && !empty($mappings['group']) && isset($resource_array[$mappings['group']])) {
+         $this->processGroups($resource_array[$mappings['group']], $user_id);
+      }
+      $isOk = $user->update($user->fields);
+
+      if (!$isOk) {
+         Toolbox::logDebug("Failed to update user data with provider data for user {$user->fields['name']}");
+      }
+   }
+
+   /**
+    * User deletion hook to remove linked users from the singlesignon table
+    * 
+    * @param User $user The user being deleted
+    */
+   public static function deleteUser(User $user) {
+      global $DB;
+      
+      if (!isset($user->fields['id'])) {
+         return;
+      }
+
+      $user_id = $user->fields['id'];
+      
+      // remove all SSO links for this user across all providers
+      $link = new PluginSinglesignonProvider_User();
+      $link->deleteByCriteria(
+         ['users_id' => $user_id],
+         false,
+         false
+      );
+   }
+
 }
